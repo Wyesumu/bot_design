@@ -1,8 +1,10 @@
 import telebot
 import time
-from telebot import types#, apihelper
+from telebot import types, apihelper
 import xlsxwriter
 from os import mkdir
+
+from PIL import Image as ProcessImage
 
 from tinydb import TinyDB, Query
 db = TinyDB('db.json')
@@ -11,13 +13,13 @@ allUser = TinyDB('allUser.json')
 articles = TinyDB('articles.json')
 
 
-token = '1247109025:AAGF25oULgH_C3pANAjlwmx8PokmSRuEsbc' #подключение к боту
+token = '726559245:AAG3sP0vJ_Vq_nr2eqKzokeb9yJ3pNbu2rQ' #подключение к боту
 
-#apihelper.proxy = {'https': 'socks5://localhost:9050'}
+apihelper.proxy = {'https': 'socks5://107032675:WvlVdfo3@ss-01.s5.ynvv.cc:999'}
 
 bot = telebot.TeleBot(token)
 
-admin =[514316978, 251272982]
+admin =[514316978, 251272982, 107032675]
 
 
 #Обработка команд
@@ -66,6 +68,7 @@ def send_table(message):
 	for i in admin:
 		if message.chat.id == i:
 			workbook = xlsxwriter.Workbook('calc.xlsx')
+			wrap_format = workbook.add_format({'text_wrap': True})
 			worksheet = workbook.add_worksheet()
 			worksheet.write(0, 0, 'Ник в Телеграмм')
 			worksheet.write(0, 1, 'Тип помещения')
@@ -79,18 +82,21 @@ def send_table(message):
 			list_user = db.search(Query().chatId > 1)
 			for us in range(len(list_user)):
 
-				worksheet.write(us+1, 0, list_user[us]['username'])
-				worksheet.write(us+1, 1, list_user[us]['tipPomechenya'])
-				worksheet.write(us+1, 2, list_user[us]['plochad'])
-				worksheet.write(us+1, 3, list_user[us]['kolPomecheniy'])
-				worksheet.write(us+1, 4, list_user[us]['viz'])
-				worksheet.write(us+1, 5, list_user[us]['stil'])
-				worksheet.write(us+1, 6, list_user[us]['conPhone'])
+				worksheet.write(us+1, 0, list_user[us]['username'], wrap_format)
+				worksheet.write(us+1, 1, list_user[us]['tipPomechenya'], wrap_format)
+				worksheet.write(us+1, 2, list_user[us]['plochad'], wrap_format)
+				worksheet.write(us+1, 3, list_user[us]['kolPomecheniy'], wrap_format)
+				worksheet.write(us+1, 4, list_user[us]['viz'], wrap_format)
+				worksheet.write(us+1, 5, list_user[us]['stil'], wrap_format)
+				worksheet.write(us+1, 6, list_user[us]['conPhone'], wrap_format)
 
 			workbook.close()
 
 			workbook = xlsxwriter.Workbook('consult.xlsx')
 			worksheet = workbook.add_worksheet()
+			worksheet.set_column('E:E', 25)
+			worksheet.set_column('F:F', 30)
+			worksheet.set_column('G:G', 30)
 			worksheet.write(0, 0, 'Ник в Телеграмм')
 			worksheet.write(0, 1, 'Тип помещения')
 			worksheet.write(0, 2, 'Площадь')
@@ -100,17 +106,19 @@ def send_table(message):
 			worksheet.write(0, 6, 'Фото')
 			worksheet.write(0, 7, 'Телефон')
 
+
 			list_user = db.search(Query().chatId > 1)
 			for us in range(len(list_user)):
+				worksheet.set_row(us+1, 100)
 
-				worksheet.write(us+1, 0, list_user[us]['username'])
-				worksheet.write(us+1, 1, list_user[us]['conType'])
-				worksheet.write(us+1, 2, list_user[us]['conPloch'])
-				worksheet.write(us+1, 3, list_user[us]['conStyle'])
-				worksheet.write(us+1, 4, list_user[us]['conExtra'])
-				worksheet.insert_image(us+1, 5, list_user[us]['conPlan'], {'x_scale': 0.2, 'y_scale': 0.2})
-				worksheet.insert_image(us+1, 6, list_user[us]['conPhoto'], {'x_scale': 0.2, 'y_scale': 0.2})
-				worksheet.write(us+1, 7, list_user[us]['conPhone'])
+				worksheet.write(us+1, 0, list_user[us]['username'], wrap_format)
+				worksheet.write(us+1, 1, list_user[us]['conType'], wrap_format)
+				worksheet.write(us+1, 2, list_user[us]['conPloch'], wrap_format)
+				worksheet.write(us+1, 3, list_user[us]['conStyle'], wrap_format)
+				worksheet.write(us+1, 4, list_user[us]['conExtra'], wrap_format)
+				worksheet.insert_image(us+1, 5, list_user[us]['conPlan'], {'x_scale': 0.2, 'y_scale': 0.2, 'object_position': 2})
+				worksheet.insert_image(us+1, 6, list_user[us]['conPhoto'], {'x_scale': 0.2, 'y_scale': 0.2, 'object_position': 2})
+				worksheet.write(us+1, 7, list_user[us]['conPhone'], wrap_format)
 				
 			workbook.close()
 
@@ -1050,6 +1058,10 @@ def photo_handler(message):
 			mkdir('img/user_uploads/')
 			with open(src, 'wb') as new_file:
 				new_file.write(downloaded_file)
+		finally:
+			with ProcessImage.open(src) as image:
+				image.thumbnail((1024, 1024), ProcessImage.ANTIALIAS)
+				image.save(src) #and save it
 
 		db.update({'conPlan': src}, Query().chatId == message.chat.id)
 
@@ -1073,6 +1085,10 @@ def photo_handler(message):
 			mkdir('img/user_uploads/')
 			with open(src, 'wb') as new_file:
 				new_file.write(downloaded_file)
+		finally:
+			with ProcessImage.open(src) as image:
+				image.thumbnail((1024, 1024), ProcessImage.ANTIALIAS)
+				image.save(src) #and save it
 		db.update({'conPhoto': src}, Query().chatId == message.chat.id)
 
 		markup = types.InlineKeyboardMarkup()
